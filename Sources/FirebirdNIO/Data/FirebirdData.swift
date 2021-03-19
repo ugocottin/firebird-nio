@@ -122,40 +122,41 @@ extension FirebirdData {
 	
 	public var date: Date? {
 		
-		guard let value = self.value else {
+		guard var value = self.value else {
 			return nil
 		}
 		
-		
-		var ctime = tm()
-		value.withUnsafeBytes { (buffer: UnsafeRawBufferPointer) in
-			let ptr = UnsafeMutablePointer<ISC_DATE>.allocate(capacity: 1)
-			ptr.pointee = buffer.bindMemory(to: ISC_DATE.self).first!
-			isc_decode_sql_date(ptr, &ctime)
-			ptr.deallocate()
+		let tm_time = withUnsafePointer(to: &value) { pointer in
+			pointer.withMemoryRebound(to: ISC_TIMESTAMP.self, capacity: 1) { datePointer -> tm in
+				var tm_time = tm()
+				isc_decode_timestamp(datePointer, &tm_time)
+				
+				return tm_time
+			}
+		}
+	
+		return Date(tm_time: tm_time)
+	}
+}
+public extension Date {
+	
+	/// Initialize a date from a `tm_time` structure
+	/// - Parameter tm_time: a `tm_time` structure
+	init(tm_time: tm) {
+		var copy = tm_time
+		let timestamp = mktime(&copy)
+		self.init(timeIntervalSince1970: TimeInterval(timestamp))
+	}
+	
+	/// Get the `tm_time` structure associated to this date
+	var tm_time: tm {
+		var timestamp: time_t = Int(self.timeIntervalSince1970)
+		let c_time: tm = withUnsafePointer(to: &timestamp) { time_ptr in
+			localtime(time_ptr).pointee
 		}
 		
-		return Date(ctime: ctime)
+		return c_time
 	}
-	
-}
-
-extension Date {
-	
-	public init?(ctime: tm) {
-		let comps = DateComponents(year: 1900 + Int(ctime.tm_year),
-								   month: 1 + Int(ctime.tm_mon),
-								   day: Int(ctime.tm_mday),
-								   hour: Int(ctime.tm_hour),
-								   minute: Int(ctime.tm_min),
-								   second: Int(ctime.tm_sec))
-		var cal = Calendar(identifier: .gregorian)
-		guard let tz = TimeZone(secondsFromGMT: ctime.tm_gmtoff) else { return nil }
-		cal.timeZone = tz
-		guard let date = cal.date(from: comps) else { return nil }
-		self = date
-	}
-	
 }
 
 extension FirebirdData {
