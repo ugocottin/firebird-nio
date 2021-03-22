@@ -6,7 +6,6 @@
 //
 
 import Foundation.NSData
-import CFirebird
 
 public struct FirebirdData {
 

@@ -12,7 +12,7 @@ let package = Package(
             targets: ["FirebirdNIO"]),
     ],
     dependencies: [
-		.package(name: "firebird-lib", path: "../firebird-lib"),
+		.package(url: "https://github.com/Jawtoch/firebird-lib.git", from: "0.0.0"),
 		.package(url: "https://github.com/vapor/async-kit.git", from: "1.0.0"),
 	],
     targets: [
@@ -20,11 +20,7 @@ let package = Package(
             name: "FirebirdNIO",
             dependencies: [
 				.product(name: "AsyncKit", package: "async-kit"),
-				.product(name: "CFirebird", package: "firebird-lib"),
-			],
-			linkerSettings: [
-				.unsafeFlags(["-F", "/Library/Frameworks"]),
-				.linkedFramework("Firebird"),
+				.product(name: "Firebird", package: "firebird-lib"),
 			]),
         .testTarget(
             name: "firebird-nioTests",
