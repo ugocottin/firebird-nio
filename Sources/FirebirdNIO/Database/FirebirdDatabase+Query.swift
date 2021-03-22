@@ -10,7 +10,7 @@ extension FirebirdDatabase {
 	public func query(_ string: String, _ binds: [FirebirdData] = []) -> Future<FirebirdQueryResult> {
 		var rows: [FirebirdRow] = []
 		var metadata: FirebirdQueryMetadata?
-		
+
 		return self.query(string, binds, onMetadata: { metadata = $0 }, onRow: { rows.append($0) })
 			.map { FirebirdQueryResult(metadata: metadata!, rows: rows) }
 	}
@@ -32,5 +32,8 @@ public struct FirebirdQueryMetadata {
 }
 
 public struct FirebirdRow {
+	
+	public let index: Int
+	public let values: [String: FirebirdData]
 	
 }

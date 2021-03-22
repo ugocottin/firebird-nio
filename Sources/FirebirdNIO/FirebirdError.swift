@@ -21,7 +21,15 @@ public class FirebirdError: Error {
 extension FirebirdError: CustomStringConvertible {
 	
 	public var bufferSize: Int {
-		256
+		512
+	}
+	
+	public var sqlcode: Int32 {
+		isc_sqlcode(&self.statusArray)
+	}
+	
+	public var errorCode: Int {
+		self.statusArray[1]
 	}
 	
 	public var description: String {
@@ -29,7 +37,7 @@ extension FirebirdError: CustomStringConvertible {
 		var buffer: Array<Int8> = Array<Int8>(repeating: 0, count: self.bufferSize)
 		isc_sql_interprete(Int16(errorCode), &buffer, Int16(self.bufferSize))
 		
-		return "FirebirdError: " + (String(cString: buffer, encoding: .utf8) ?? "error code \(errorCode)")
+		return "FirebirdError \(errorCode)/\(self.statusArray[1]): " + (String(cString: buffer, encoding: .utf8) ?? "error code \(errorCode)")
 	}
 	
 }

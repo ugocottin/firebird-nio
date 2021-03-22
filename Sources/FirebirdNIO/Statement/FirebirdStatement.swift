@@ -35,6 +35,8 @@ public struct FirebirdStatement {
 
 public struct DescriptorArea {
 	
+	public static var descriptorVersion: UInt16 = 1
+	
 	/// Return the required size for storing `size` columns descriptors
 	/// - Parameter size: number of columns descriptors needed
 	/// - Returns: the memory space for storing the descriptors
@@ -213,4 +215,38 @@ public struct DescriptorVariable: CustomStringConvertible {
 	public var description: String {
 		"\(self.name) [\(self.type) \(self.size) ± \(self.scale)]"
 	}
+}
+
+public struct FirebirdStatementVariableAllocator {
+	
+	public func allocateMemory(for variable: inout DescriptorVariable) {
+		if variable.nullable {
+			variable.nullIndicatorPointer = self.allocateMemory(for: CShort.self, as: ISC_SHORT.self)
+		}
+		
+		switch variable.type {
+			case .text:
+				variable.dataPointer = self.allocateMemory(for: CChar.self, capacity: variable.size, as: ISC_SCHAR.self)
+			case .varying:
+				variable.dataPointer = self.allocateMemory(for: CChar.self, capacity: variable.size + 2, as: ISC_SCHAR.self)
+				variable.type = .text
+			case .long, .d_float, .float:
+				variable.dataPointer = self.allocateMemory(for: CLong.self, as: ISC_SCHAR.self)
+			case .short:
+				variable.dataPointer = self.allocateMemory(for: CShort.self, as: ISC_SCHAR.self)
+			case .int64:
+				variable.dataPointer = self.allocateMemory(for: Int64.self, as: ISC_SCHAR.self)
+			case .timestamp, .time, .date:
+				variable.dataPointer = self.allocateMemory(for: ISC_TIMESTAMP.self, as: ISC_SCHAR.self)
+			default:
+				fatalError("datatype unsupported")
+		}
+	}
+	
+	private func allocateMemory<T, S>(for type: T.Type, capacity: Int = 1, as: S.Type) -> UnsafeMutablePointer<S> {
+		return UnsafeMutableRawPointer
+			.allocate(byteCount: MemoryLayout<T>.stride * capacity, alignment: MemoryLayout<T>.alignment)
+			.assumingMemoryBound(to: S.self)
+	}
+	
 }

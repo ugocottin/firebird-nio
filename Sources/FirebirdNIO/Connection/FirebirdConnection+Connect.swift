@@ -64,6 +64,7 @@ extension FirebirdConnection {
 	
 }
 
+// TODO: - Remove this
 extension String: Error {
 	
 }
