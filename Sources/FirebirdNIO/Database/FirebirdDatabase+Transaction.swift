@@ -19,6 +19,10 @@ fileprivate struct teb {
 
 extension FirebirdDatabase {
 	
+	public var inTransaction: Bool {
+		return self.transaction != nil
+	}
+	
 	public func startTransaction(on connection: FirebirdConnection) -> Future<FirebirdTransaction> {
 		
 		var tebVector: [teb] = []
@@ -62,5 +66,36 @@ extension FirebirdDatabase {
 		return self.eventLoop.makeSucceededVoidFuture()
 	}
 	
+	
+	/// Execute the callback with a transaction.
+	/// If a transaction is already started on this database, it will be used.
+	/// Else, a new transaction will be created, used and commited to the database immediately
+	/// - Parameter callback: a callback with a transaction
+	/// - Returns: the result of the callback
+	public func withTransaction<T>(on connection: FirebirdConnection, _ callback: @escaping (FirebirdTransaction) throws -> T) -> Future<T> {
+		let transaction: Future<FirebirdTransaction>
+		let isLocalTransaction: Bool
+		if self.inTransaction {
+			transaction = self.eventLoop.makeSucceededFuture(self.transaction!)
+			isLocalTransaction = false
+		} else {
+			transaction = self.startTransaction(on: connection)
+			isLocalTransaction = true
+		}
+		
+		return transaction.flatMap { transaction in
+			do {
+				let result = try callback(transaction)
+				
+				if isLocalTransaction {
+					return self.commitTransaction(transaction).map { result }
+				}
+				
+				return self.eventLoop.makeSucceededFuture(result)
+			} catch {
+				return self.eventLoop.makeFailedFuture(error)
+			}
+		}
+	}
 }
 

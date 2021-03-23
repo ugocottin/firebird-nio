@@ -29,17 +29,12 @@ extension FirebirdConnection: FirebirdDatabase {
 			return try self.execute(statement, with: transaction)
 		}
 		
-		let openCursor = executedStatement.and(statement).flatMapThrowing { _, statement -> Void in
-			
-			var status = FirebirdError.statusArray
-			var statement = statement
-			if isc_dsql_set_cursor_name(&status, &statement.handle, "dyn_cursor", .zero) > 0 {
-				throw FirebirdError(status)
-			}
+		let statementWithCursor = executedStatement.and(statement).flatMapThrowing { _, statement in
+			return try self.openCursor(on: statement)
 		}
 		
-		return openCursor.and(statement).and(descriptorArea).flatMapThrowing { varArg -> Void in
-			var ((_, statement), descriptorArea) = varArg
+		return statementWithCursor.and(descriptorArea).flatMapThrowing { statement, descriptorArea -> Void in
+			var statement = statement
 			var status = FirebirdError.statusArray
 			
 			var index = 0

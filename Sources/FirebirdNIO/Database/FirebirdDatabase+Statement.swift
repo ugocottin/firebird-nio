@@ -68,6 +68,19 @@ extension FirebirdDatabase {
 		return self.eventLoop.makeSucceededFuture(descriptorArea)
 	}
 	
+	public func openCursor(on statement: FirebirdStatement) throws -> FirebirdStatement {
+		var status = FirebirdError.statusArray
+		var statement = statement
+		
+		let cursor = Cursor(name: String.randomString(length: 10))
+		if isc_dsql_set_cursor_name(&status, &statement.handle, cursor.name, .zero) > 0 {
+			throw FirebirdError(status)
+		}
+		
+		statement.cursor = cursor
+		return statement
+	}
+	
 	public func execute(_ statement: FirebirdStatement, with transaction: FirebirdTransaction) throws -> Future<Void> {
 		var status = FirebirdError.statusArray
 		var statement = statement

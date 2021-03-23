@@ -15,9 +15,12 @@ public struct FirebirdStatement {
 	
 	public let query: String
 	
+	public var cursor: Cursor?
+	
 	public init(_ query: String, handle: isc_db_handle = 0) {
 		self.query = query
 		self.handle = handle
+		self.cursor = nil
 	}
 	
 	public static func makeDescriptorArea(numberOfVariables: Int = 10) -> DescriptorArea {
@@ -33,88 +36,10 @@ public struct FirebirdStatement {
 	}
 }
 
-public struct DescriptorArea {
+public struct Cursor {
 	
-	public static var descriptorVersion: UInt16 = 1
+	public let name: String
 	
-	/// Return the required size for storing `size` columns descriptors
-	/// - Parameter size: number of columns descriptors needed
-	/// - Returns: the memory space for storing the descriptors
-	public static func XSQLDA_LENGTH(_ size: Int) -> Int {
-		MemoryLayout<XSQLDA>.size + (size - 1) * MemoryLayout<XSQLVAR>.size
-	}
-	
-	// Mark: Variables
-	internal let pointer: UnsafeMutablePointer<XSQLDA>
-	
-	// Mark: Computed variables
-	
-	/// Indicate the version of the descriptor structure (see "XSQLDA structure version")
-	public var version: Int16 {
-		get {
-			return self.pointer.pointee.version
-		}
-		set {
-			self.pointer.pointee.version = newValue
-		}
-	}
-	
-	public var count: Int16 {
-		get {
-			self.pointer.pointee.sqln
-		}
-		set {
-			self.pointer.pointee.sqln = newValue
-		}
-	}
-	
-	public var requiredCount: Int16 {
-		self.pointer.pointee.sqld
-	}
-	
-	/// Array of XSQLVAR structures.
-	/// Theses structures are a copy of the structures contained in the
-	public var variables: Array<DescriptorVariable> {
-		return withUnsafeMutablePointer(to: &self.pointer.pointee.sqlvar) { varPtr in
-			var array: Array<DescriptorVariable> = []
-			for index in 0 ..< Int(min(self.count, self.requiredCount)) {
-				array.append(DescriptorVariable(fromPointer: varPtr.advanced(by: index)))
-			}
-			
-			return array
-		}
-	}
-	
-	// Mark: Init
-	internal init(fromPointer pointer: UnsafeMutablePointer<XSQLDA>) {
-		self.pointer = pointer
-	}
-	
-	// Mark: subscript
-	subscript(index: Int) -> DescriptorVariable {
-		get {
-			self.variables[index]
-		}
-		set {
-			withUnsafeMutablePointer(to: &self.pointer.pointee.sqlvar) { varPtr in
-				varPtr.advanced(by: index).pointee = newValue.pointer.pointee
-			}
-		}
-	}
-	
-	// Mark: functions
-	public func free() {
-		self.pointer.deallocate()
-	}
-}
-
-extension DescriptorArea: CustomStringConvertible {
-	public var description: String {
-		"""
-Descriptor v\(self.version), area of \(self.count) variables, required \(self.requiredCount):
-\(self.variables.map { "\t- " + $0.description }.joined(separator: "\n"))
-"""
-	}
 }
 
 extension FirebirdStatement: CustomStringConvertible {
@@ -127,7 +52,7 @@ extension FirebirdStatement: CustomStringConvertible {
 
 public struct DescriptorVariable: CustomStringConvertible {
 	
-	fileprivate let pointer: UnsafeMutablePointer<XSQLVAR>
+	let pointer: UnsafeMutablePointer<XSQLVAR>
 	
 	internal init(fromPointer pointer: UnsafeMutablePointer<XSQLVAR>) {
 		self.pointer = pointer

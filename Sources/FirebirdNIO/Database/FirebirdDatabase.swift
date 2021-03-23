@@ -7,7 +7,10 @@
 
 public protocol FirebirdDatabase {
 	
+	/// Logger of the database
 	var logger: Logger { get }
+	
+	/// Eventloop of the database
 	var eventLoop: EventLoop { get }
 	
 	var transaction: FirebirdTransaction? { get }
