@@ -22,11 +22,24 @@ extension FirebirdConnection: FirebirdDatabase {
 			.flatMap { _ in self.allocate(FirebirdStatement(string), on: self) }
 			.and(transaction).flatMap { self.prepare(string, on: $0, $1) }
 			
+		let inputDescriptorArea = statement.flatMap { self.describeInput(of: $0) }.map { ida -> DescriptorArea in
+			for (index, var variable) in ida.variables.enumerated() {
+				let bind = binds[index]
+				variable.data = bind.value
+				
+				if (bind.value == nil) {
+					variable.nullIndicatorPointer.pointee = 1
+				}
+			}
+			
+			return ida
+		}
 		let descriptorArea = statement
 			.flatMap { self.describeOutput(of: $0) }
 		
-		let executedStatement = transaction.and(statement).flatMapThrowing { transaction, statement -> Future<Void> in
-			return try self.execute(statement, with: transaction)
+		let executedStatement = transaction.and(statement).and(inputDescriptorArea).flatMapThrowing { varArg -> Future<Void> in
+			let ((transaction, statement), ida) = varArg
+			return try self.execute(statement, with: transaction, ida)
 		}
 		
 		let statementWithCursor = executedStatement.and(statement).flatMapThrowing { _, statement in
