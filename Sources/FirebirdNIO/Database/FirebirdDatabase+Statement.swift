@@ -36,6 +36,36 @@ extension FirebirdDatabase {
 		return self.eventLoop.makeSucceededFuture(statement)
 	}
 	
+	public func describeInput(of statement: FirebirdStatement, _ size: Int16 = 10) -> Future<DescriptorArea> {
+		var status = FirebirdError.statusArray
+		var statement = statement
+		
+		let xsqlda = UnsafeMutableRawPointer
+			.allocate(byteCount: DescriptorArea.XSQLDA_LENGTH(Int(size)), alignment: 1)
+			.assumingMemoryBound(to: XSQLDA.self)
+		
+		var descriptorArea = DescriptorArea(fromPointer: xsqlda)
+		descriptorArea.version = Int16(DescriptorArea.descriptorVersion)
+		descriptorArea.count = size
+		
+		if isc_dsql_describe_bind(&status, &statement.handle, DescriptorArea.descriptorVersion, descriptorArea.pointer) > 0 {
+			return self.eventLoop.makeFailedFuture(FirebirdError(status))
+		}
+		
+		if descriptorArea.requiredCount > descriptorArea.count {
+			let size = descriptorArea.requiredCount
+			descriptorArea.free()
+			return describeInput(of: statement, size)
+		}
+		
+		let allocator = FirebirdStatementVariableAllocator()
+		for var variable in descriptorArea.variables {
+			allocator.allocateMemory(for: &variable)
+		}
+		
+		return self.eventLoop.makeSucceededFuture(descriptorArea)
+	}
+	
 	public func describeOutput(of statement: FirebirdStatement, _ size: Int16 = 10) -> Future<DescriptorArea> {
 		
 		var status = FirebirdError.statusArray
@@ -87,6 +117,18 @@ extension FirebirdDatabase {
 		var transaction = transaction
 
 		if isc_dsql_execute(&status, &transaction.handle, &statement.handle, DescriptorArea.descriptorVersion, nil) > 0 {
+			throw FirebirdError(status)
+		}
+		
+		return self.eventLoop.makeSucceededVoidFuture()
+	}
+	
+	public func execute(_ statement: FirebirdStatement, with transaction: FirebirdTransaction, _ descriptorArea: DescriptorArea) throws -> Future<Void> {
+		var status = FirebirdError.statusArray
+		var statement = statement
+		var transaction = transaction
+		
+		if isc_dsql_execute(&status, &transaction.handle, &statement.handle, DescriptorArea.descriptorVersion, descriptorArea.pointer) > 0 {
 			throw FirebirdError(status)
 		}
 		

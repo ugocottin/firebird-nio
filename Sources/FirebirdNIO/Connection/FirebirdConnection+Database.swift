@@ -33,7 +33,7 @@ extension FirebirdConnection: FirebirdDatabase {
 			return try self.openCursor(on: statement)
 		}
 		
-		return statementWithCursor.and(descriptorArea).flatMapThrowing { statement, descriptorArea -> Void in
+		let fetchedStatement = statementWithCursor.and(descriptorArea).flatMapThrowing { statement, descriptorArea -> Void in
 			var statement = statement
 			var status = FirebirdError.statusArray
 			
@@ -49,6 +49,19 @@ extension FirebirdConnection: FirebirdDatabase {
 				let row = FirebirdRow(index: index, values: values)
 				try onRow(row)
 				index += 1
+			}
+		}
+		
+		
+		return fetchedStatement.and(inputDescriptorArea).map { _, ida in
+			for variable in ida.variables {
+				variable.nullIndicatorPointer.deallocate()
+				variable.dataPointer.deallocate()
+			}
+		}.and(descriptorArea).map { _, oda in
+			for variable in oda.variables {
+				variable.nullIndicatorPointer.deallocate()
+				variable.dataPointer.deallocate()
 			}
 		}
 	}

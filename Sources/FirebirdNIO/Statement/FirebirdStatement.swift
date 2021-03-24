@@ -127,8 +127,12 @@ public struct DescriptorVariable: CustomStringConvertible {
 		}
 		set {
 			if let newValue = newValue {
-				self.pointer.pointee.sqlind.pointee = 0
-				self.pointer.pointee.sqldata.withMemoryRebound(to: UInt8.self, capacity: Int(self.size)) { buffer in
+				guard let dataPointer = self.pointer.pointee.sqldata else {
+					debugPrint("Warning: no data pointer")
+					return
+				}
+				
+				dataPointer.withMemoryRebound(to: UInt8.self, capacity: Int(self.size)) { buffer in
 					newValue.copyBytes(to: buffer, count: min(newValue.count, Int(self.size)))
 				}
 			} else {
