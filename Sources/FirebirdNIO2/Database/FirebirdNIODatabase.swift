@@ -12,6 +12,8 @@ public protocol FirebirdNIODatabase {
 	
 	var eventLoop: EventLoop { get }
 	
+	func withConnection<T>(_ closure: @escaping (FirebirdNIOConnection) -> EventLoopFuture<T>) -> EventLoopFuture<T>
+	
 	/// Perform a query that dont return data
 	/// - Parameters:
 	///   - query: a query string
@@ -24,22 +26,6 @@ public protocol FirebirdNIODatabase {
 	///   - binds: query parameters
 	/// - Returns: the result rows
 	func query(_ query: String, _ binds: [FirebirdData]) -> EventLoopFuture<[FirebirdRow]>
-	
-	func query(_ query: String, _ binds: [FirebirdData], onRow: @escaping (FirebirdRow) throws -> Void) -> EventLoopFuture<Void>
-	
-	func withConnection<T>(_ closure: @escaping (FirebirdNIOConnection) throws -> T) rethrows -> T
-	
-}
 
-public extension FirebirdNIODatabase {
-			
-	func query(_ query: String, _ binds: [FirebirdData] = []) -> EventLoopFuture<[FirebirdRow]> {
-		let promise = eventLoop.makePromise(of: [FirebirdRow].self)
-		var rows: [FirebirdRow] = []
-		return self.query(query, binds, onRow: { rows.append($0) }).flatMap {_ in
-			promise.succeed(rows)
-			return promise.futureResult
-		}
-	}
-	
+	func query(_ query: String, _ binds: [FirebirdData], onRow: @escaping (FirebirdRow) throws -> Void) -> EventLoopFuture<Void>
 }

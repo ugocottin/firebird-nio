@@ -15,7 +15,7 @@ let package = Package(
 			targets: ["FirebirdNIO2"]),
     ],
     dependencies: [
-		.package(url: "https://github.com/Jawtoch/firebird-lib.git", from: "0.0.0"),
+		.package(url: "https://github.com/Jawtoch/firebird-lib.git", from: "0.1.0"),
 		.package(url: "https://github.com/vapor/async-kit.git", from: "1.0.0"),
 	],
     targets: [

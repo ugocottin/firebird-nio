@@ -16,29 +16,14 @@ public class FirebirdNIOConnection {
 	
 	public let eventLoop: EventLoop
 	
+	public let logger: Logger
+	
 	public let connection: FirebirdConnection
 	
 	public init(connection: FirebirdConnection, eventLoop: EventLoop, logger: Logger) {
 		self.connection = connection
 		self.eventLoop = eventLoop
-	}
-}
-
-extension FirebirdNIOConnection: ConnectionPoolItem {
-	public func close() -> EventLoopFuture<Void> {
-		let promise = self.eventLoop.makePromise(of: Void.self)
-		do {
-			try self.connection.close()
-			promise.succeed(())
-		} catch {
-			promise.fail(error)
-		}
-		
-		return promise.futureResult
-	}
-	
-	public var isClosed: Bool {
-		!self.connection.isOpened
+		self.logger = logger
 	}
 }
 
@@ -69,27 +54,10 @@ public extension FirebirdNIOConnection {
 }
 
 extension FirebirdNIOConnection: FirebirdNIODatabase {
-	
-	public func withConnection<T>(_ closure: @escaping (FirebirdNIOConnection) throws -> T) rethrows -> T {
-		try closure(self)
+	public func withConnection<T>(_ closure: @escaping (FirebirdNIOConnection) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
+		return closure(self)
 	}
 	
-	public func query(_ query: String, _ binds: [FirebirdData], onRow: @escaping (FirebirdRow) throws -> Void) -> EventLoopFuture<Void> {
-		let promise = self.eventLoop.makePromise(of: Void.self)
-		
-		do {
-			try self.connection.query(query, binds, onRow: onRow)
-			promise.succeed(())
-		} catch {
-			promise.fail(error)
-		}
-		
-		return promise.futureResult
-	}
-	
-	public var logger: Logger {
-		self.connection.logger
-	}
 	
 	public func simpleQuery(_ query: String, _ binds: [FirebirdData]) -> EventLoopFuture<Void> {
 		let promise = self.eventLoop.makePromise(of: Void.self)
@@ -102,7 +70,31 @@ extension FirebirdNIOConnection: FirebirdNIODatabase {
 		}
 		
 		return promise.futureResult
-		
 	}
 	
+	public func query(_ query: String, _ binds: [FirebirdData]) -> EventLoopFuture<[FirebirdRow]> {
+		let promise = self.eventLoop.makePromise(of: [FirebirdRow].self)
+		
+		do {
+			let rows = try self.connection.query(query, binds)
+			promise.succeed(rows)
+		} catch {
+			promise.fail(error)
+		}
+		
+		return promise.futureResult
+	}
+	
+	public func query(_ query: String, _ binds: [FirebirdData] = [], onRow: @escaping (FirebirdRow) throws -> Void) -> EventLoopFuture<Void> {
+		let promise = eventLoop.makePromise(of: Void.self)
+	
+		do {
+			try self.connection.query(query, binds, onRow: onRow)
+			promise.succeed(())
+		} catch {
+			promise.fail(error)
+		}
+
+		return promise.futureResult
+	}
 }
