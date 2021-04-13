@@ -1,25 +1,66 @@
 import XCTest
-@testable import FirebirdNIO2
 import Firebird
-import AsyncKit
+@testable import FirebirdNIO
 
 final class FirebirdNIOTests: XCTestCase {
 	
-	private let configuration = FirebirdConnectionConfiguration(
-		hostname: "localhost",
-		port: 3051,
-		username: "SYSDBA",
-		password: "MASTERKEY",
-		database: "EMPLOYEE")
+	// MARK: - NIO stuff
+	private static let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
 	
-    func testExample() throws {
-		let eventLoop = MultiThreadedEventLoopGroup(numberOfThreads: 1).next()
-		try FirebirdNIOConnection.connect(self.configuration, on: eventLoop).whenSuccess { print($0.connection) }
-		print("fini!")
-		sleep(10)
+	private var eventLoop: EventLoop {
+		Self.eventLoopGroup.next()
 	}
-
+	
+	override class func tearDown() {
+		try! self.eventLoopGroup.syncShutdownGracefully()
+	}
+	
+	// MARK: - Connection parameters
+	private let hostname: String! = "localhost"
+	
+	private let port: UInt16? = 3050
+	
+	private let username: String! = "SYSDBA"
+	
+	private let password: String! = "MASTERKE"
+	
+	private let database: String! = "EMPLOYEE"
+	
+	private var configuration: FirebirdConnectionConfiguration {
+		.init(
+			hostname: self.hostname,
+			port: self.port,
+			username: self.username,
+			password: self.password,
+			database: self.database)
+	}
+	
+	private var connection: EventLoopFuture<FirebirdNIOConnection>!
+	
+	override func setUp() {
+		self.connection = FirebirdNIOConnection
+			.connect(
+				self.configuration,
+				logger: Logger(label: "testing.firebird"),
+				on: self.eventLoop)
+	}
+	
+	override func tearDownWithError() throws {
+		try self.connection.wait().close().wait()
+	}
+	
+	func testConnection() throws {
+		let futureResults = self.connection.flatMap { conn in
+			conn.query("SELECT emp_no FROM employee")
+		}
+		
+		XCTAssertNoThrow {
+			let results = try futureResults.wait()
+			XCTAssertGreaterThan(results.count, 0)
+		}
+	}
+	
     static var allTests = [
-        ("testExample", testExample),
+        ("testConnection", testConnection),
     ]
 }

@@ -10,9 +10,6 @@ let package = Package(
         .library(
             name: "FirebirdNIO",
             targets: ["FirebirdNIO"]),
-		.library(
-			name: "FirebirdNIO2",
-			targets: ["FirebirdNIO2"]),
     ],
     dependencies: [
 		.package(url: "https://github.com/Jawtoch/firebird-lib.git", from: "0.1.0"),
@@ -25,14 +22,8 @@ let package = Package(
 				.product(name: "AsyncKit", package: "async-kit"),
 				.product(name: "Firebird", package: "firebird-lib"),
 			]),
-		.target(
-			name: "FirebirdNIO2",
-			dependencies: [
-				.product(name: "AsyncKit", package: "async-kit"),
-				.product(name: "Firebird", package: "firebird-lib"),
-			]),
         .testTarget(
             name: "FirebirdNIOTests",
-            dependencies: ["FirebirdNIO", "FirebirdNIO2"]),
+            dependencies: ["FirebirdNIO"]),
     ]
 )

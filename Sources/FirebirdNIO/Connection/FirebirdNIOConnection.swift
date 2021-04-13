@@ -25,6 +25,17 @@ public class FirebirdNIOConnection {
 		self.eventLoop = eventLoop
 		self.logger = logger
 	}
+	
+	public func close() -> EventLoopFuture<Void> {
+		let promise = self.eventLoop.makePromise(of: Void.self)
+		do {
+			try self.connection.close()
+			promise.succeed(())
+		} catch {
+			promise.fail(error)
+		}
+		return promise.futureResult
+	}
 }
 
 
@@ -59,7 +70,7 @@ extension FirebirdNIOConnection: FirebirdNIODatabase {
 	}
 	
 	
-	public func simpleQuery(_ query: String, _ binds: [FirebirdData]) -> EventLoopFuture<Void> {
+	public func simpleQuery(_ query: String, _ binds: [FirebirdData] = []) -> EventLoopFuture<Void> {
 		let promise = self.eventLoop.makePromise(of: Void.self)
 		
 		do {
@@ -72,7 +83,7 @@ extension FirebirdNIOConnection: FirebirdNIODatabase {
 		return promise.futureResult
 	}
 	
-	public func query(_ query: String, _ binds: [FirebirdData]) -> EventLoopFuture<[FirebirdRow]> {
+	public func query(_ query: String, _ binds: [FirebirdData] = []) -> EventLoopFuture<[FirebirdRow]> {
 		let promise = self.eventLoop.makePromise(of: [FirebirdRow].self)
 		
 		do {
