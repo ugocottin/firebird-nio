@@ -5,27 +5,30 @@
 //  Created by Ugo Cottin on 24/03/2021.
 //
 
-//
-//  FirebirdConnection.swift
-//
-//
-//  Created by Ugo Cottin on 15/03/2021.
-//
-
+/// Wrapper of blocking Firebird Connection
 public class FirebirdNIOConnection {
 	
+	/// Event loop of the connection
 	public let eventLoop: EventLoop
 	
+	/// Logger of the connection
 	public let logger: Logger
 	
+	/// Underlying blocking Firebird connection
 	public let connection: FirebirdConnection
 	
+	/// Create a non blocking Firebird connection based of an existing Firebird connection, on an event loop
+	/// - Parameters:
+	///   - connection: the Firebird (blocking) connection
+	///   - eventLoop: the event loop of the connection
+	///   - logger: the logger used to log informations
 	public init(connection: FirebirdConnection, eventLoop: EventLoop, logger: Logger) {
 		self.connection = connection
 		self.eventLoop = eventLoop
 		self.logger = logger
 	}
 	
+	/// Close the connection
 	public func close() -> EventLoopFuture<Void> {
 		let promise = self.eventLoop.makePromise(of: Void.self)
 		do {
@@ -41,6 +44,12 @@ public class FirebirdNIOConnection {
 
 public extension FirebirdNIOConnection {
 	
+	/// Connect to a Firebird database server with given configuration
+	/// - Parameters:
+	///   - configuration: <#configuration description#>
+	///   - logger: <#logger description#>
+	///   - eventLoop: <#eventLoop description#>
+	/// - Returns: <#description#>
 	static func connect(
 		_ configuration: FirebirdConnectionConfiguration,
 		logger: Logger = Logger(label: "logging.firebird"),

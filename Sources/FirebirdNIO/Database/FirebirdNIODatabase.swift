@@ -26,8 +26,16 @@ public protocol FirebirdNIODatabase {
 	///   - binds: query parameters
 	/// - Returns: the result rows
 	func query(_ query: String, _ binds: [FirebirdData]) -> EventLoopFuture<[FirebirdRow]>
-
+	
+	/// Ferform a query that return data on a callback
+	/// - Parameters:
+	///   - query: a query string
+	///   - binds: query parameters
+	///   - onRow: a callback called each time a row is fetched
 	func query(_ query: String, _ binds: [FirebirdData], onRow: @escaping (FirebirdRow) throws -> Void) -> EventLoopFuture<Void>
 	
+	
+	/// Execute the callback with a transaction. If something went wrong on the callback, the transaction is rolled back, else the transaction is commited
+	/// - Parameter closure: a closure on the connection
 	func withTransaction<T>(_ closure: @escaping((FirebirdNIOConnection) -> EventLoopFuture<T>)) -> EventLoopFuture<T>
 }
