@@ -65,6 +65,16 @@ public extension FirebirdNIOConnection {
 }
 
 extension FirebirdNIOConnection: FirebirdNIODatabase {
+	public func withTransaction<T>(_ closure: @escaping ((FirebirdNIOConnection) -> EventLoopFuture<T>)) -> EventLoopFuture<T> {
+		do {
+			return try self.connection.withTransaction {
+				return closure(self)
+			}
+		} catch {
+			return self.eventLoop.makeFailedFuture(error)
+		}
+	}
+	
 	public func withConnection<T>(_ closure: @escaping (FirebirdNIOConnection) -> EventLoopFuture<T>) -> EventLoopFuture<T> {
 		return closure(self)
 	}

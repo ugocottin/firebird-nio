@@ -28,4 +28,6 @@ public protocol FirebirdNIODatabase {
 	func query(_ query: String, _ binds: [FirebirdData]) -> EventLoopFuture<[FirebirdRow]>
 
 	func query(_ query: String, _ binds: [FirebirdData], onRow: @escaping (FirebirdRow) throws -> Void) -> EventLoopFuture<Void>
+	
+	func withTransaction<T>(_ closure: @escaping((FirebirdNIOConnection) -> EventLoopFuture<T>)) -> EventLoopFuture<T>
 }
