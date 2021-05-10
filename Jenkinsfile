@@ -9,7 +9,7 @@ pipeline {
 		stage('Setup') {
 			steps {
 				sh 'rm -rf ./*'
-				scm checkout
+				checkout scm
 				sh 'apt-get update'
 				sh 'apt-get install -y firebird-dev'
 				sh 'swift package resolve'
