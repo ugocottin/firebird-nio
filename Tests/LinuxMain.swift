@@ -1,7 +1,7 @@
 import XCTest
 
-import firebird_nioTests
+import FirebirdNIOTests
 
 var tests = [XCTestCaseEntry]()
-tests += firebird_nioTests.allTests()
+tests += FirebirdNIOTests.allTests()
 XCTMain(tests)
