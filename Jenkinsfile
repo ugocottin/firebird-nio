@@ -13,6 +13,11 @@ pipeline {
 				sh 'swift package resolve'
 			}
 		}
+		stage('Build') {
+			steps {
+				sh 'swift build'
+			}
+		}
 		stage('Test') {
 			steps {
 				sh 'swift test'
