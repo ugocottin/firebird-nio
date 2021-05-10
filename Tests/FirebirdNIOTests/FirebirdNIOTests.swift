@@ -16,15 +16,43 @@ final class FirebirdNIOTests: XCTestCase {
 	}
 	
 	// MARK: - Connection parameters
-	private let hostname: String! = "localhost"
+	private var hostname: String {
+		guard let hostname = ProcessInfo.processInfo.environment["FB_TEST_HOSTNAME"] else {
+			fatalError("FB_TEST_HOSTNAME is not defined")
+		}
+		
+		return hostname
+	}
 	
-	private let port: UInt16? = 3050
+	private var port: UInt16? {
+		guard let port = ProcessInfo.processInfo.environment["FB_TEST_PORT"] else { return nil }
+		
+		return UInt16(port)
+	}
 	
-	private let username: String! = "SYSDBA"
+	private var username: String {
+		guard let username = ProcessInfo.processInfo.environment["FB_TEST_USERNAME"] else {
+			fatalError("FB_TEST_USERNAME is not defined")
+		}
+		
+		return username
+	}
 	
-	private let password: String! = "MASTERKE"
+	private var password: String {
+		guard let password = ProcessInfo.processInfo.environment["FB_TEST_PASSWORD"] else {
+			fatalError("FB_TEST_PASSWORD is not defined")
+		}
+		
+		return password
+	}
 	
-	private let database: String! = "EMPLOYEE"
+	private var database: String {
+		guard let database = ProcessInfo.processInfo.environment["FB_TEST_DATABASE"] else {
+			fatalError("FB_TEST_DATABASE is not defined")
+		}
+		
+		return database
+	}
 	
 	private var configuration: FirebirdConnectionConfiguration {
 		.init(
@@ -50,6 +78,9 @@ final class FirebirdNIOTests: XCTestCase {
 	}
 	
 	func testConnection() throws {
+		let conn = try self.connection.wait()
+		XCTAssertTrue(conn.connection.isOpened)
+		
 		let futureResults = self.connection.flatMap { conn in
 			conn.query("SELECT emp_no FROM employee")
 		}
@@ -60,7 +91,16 @@ final class FirebirdNIOTests: XCTestCase {
 		}
 	}
 	
+	func testQuery() throws {
+		let rows = try self.connection.flatMap { conn in
+			conn.query("SELECT emp_no FROM employee")
+		}.wait()
+
+		XCTAssertTrue(rows.count > 0)
+	}
+	
     static var allTests = [
         ("testConnection", testConnection),
+		("testQuery", testQuery),
     ]
 }
