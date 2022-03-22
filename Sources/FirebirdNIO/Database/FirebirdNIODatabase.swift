@@ -18,21 +18,21 @@ public protocol FirebirdNIODatabase {
 	/// - Parameters:
 	///   - query: a query string
 	///   - binds: query parameters
-	func simpleQuery(_ query: String, _ binds: [FirebirdData]) -> EventLoopFuture<Void>
+	func simpleQuery(_ query: String, _ binds: [FirebirdDataConvertible]) -> EventLoopFuture<Void>
 	
 	/// Perform a query that return datas
 	/// - Parameters:
 	///   - query: a query string
 	///   - binds: query parameters
 	/// - Returns: the result rows
-	func query(_ query: String, _ binds: [FirebirdData]) -> EventLoopFuture<[FirebirdRow]>
+	func query(_ query: String, _ binds: [FirebirdDataConvertible]) -> EventLoopFuture<[FirebirdRow]>
 	
 	/// Ferform a query that return data on a callback
 	/// - Parameters:
 	///   - query: a query string
 	///   - binds: query parameters
 	///   - onRow: a callback called each time a row is fetched
-	func query(_ query: String, _ binds: [FirebirdData], onRow: @escaping (FirebirdRow) throws -> Void) -> EventLoopFuture<Void>
+	func query(_ query: String, _ binds: [FirebirdDataConvertible], onRow: @escaping (FirebirdRow) throws -> Void) -> EventLoopFuture<Void>
 	
 	
 	/// Execute the callback with a transaction. If something went wrong on the callback, the transaction is rolled back, else the transaction is commited

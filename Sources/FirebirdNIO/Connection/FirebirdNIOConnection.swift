@@ -5,6 +5,8 @@
 //  Created by Ugo Cottin on 24/03/2021.
 //
 
+import Firebird
+
 /// Wrapper of blocking Firebird Connection
 public class FirebirdNIOConnection {
 	
@@ -89,7 +91,7 @@ extension FirebirdNIOConnection: FirebirdNIODatabase {
 	}
 	
 	
-	public func simpleQuery(_ query: String, _ binds: [FirebirdData] = []) -> EventLoopFuture<Void> {
+	public func simpleQuery(_ query: String, _ binds: [FirebirdDataConvertible] = []) -> EventLoopFuture<Void> {
 		let promise = self.eventLoop.makePromise(of: Void.self)
 		
 		do {
@@ -102,7 +104,7 @@ extension FirebirdNIOConnection: FirebirdNIODatabase {
 		return promise.futureResult
 	}
 	
-	public func query(_ query: String, _ binds: [FirebirdData] = []) -> EventLoopFuture<[FirebirdRow]> {
+	public func query(_ query: String, _ binds: [FirebirdDataConvertible] = []) -> EventLoopFuture<[FirebirdRow]> {
 		let promise = self.eventLoop.makePromise(of: [FirebirdRow].self)
 		
 		do {
@@ -115,7 +117,7 @@ extension FirebirdNIOConnection: FirebirdNIODatabase {
 		return promise.futureResult
 	}
 	
-	public func query(_ query: String, _ binds: [FirebirdData] = [], onRow: @escaping (FirebirdRow) throws -> Void) -> EventLoopFuture<Void> {
+	public func query(_ query: String, _ binds: [FirebirdDataConvertible] = [], onRow: @escaping (FirebirdRow) throws -> Void) -> EventLoopFuture<Void> {
 		let promise = eventLoop.makePromise(of: Void.self)
 	
 		do {

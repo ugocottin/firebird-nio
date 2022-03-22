@@ -12,7 +12,7 @@ let package = Package(
             targets: ["FirebirdNIO"]),
     ],
     dependencies: [
-		.package(url: "https://github.com/Jawtoch/firebird-lib.git", from: "0.1.0"),
+		.package(url: "https://github.com/ugocottin/firebird-lib.git", from: "0.1.0"),
 		.package(url: "https://github.com/vapor/async-kit.git", from: "1.0.0"),
 	],
     targets: [
